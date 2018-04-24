@@ -20,7 +20,6 @@ class FetchStoreData
   @@workbook = RubyXL::Workbook.new
   @@worksheet = @@workbook[0]
   @@worksheet.sheet_name = 'SearchedStoreData'
-
   @PAGE_LAST_INDEX = 1
 
   def initialize(index = 50)
@@ -33,9 +32,12 @@ class FetchStoreData
 
     @PAGE_LAST_INDEX.times { |i|
 
+      puts "#{i}回目のクローリング"
       base_url = "https://www.ekiten.jp"
       total_data = []
       charset = nil
+
+      # ここで、カテゴリを選択する。
       url = "https://www.ekiten.jp/cat_seitai/chiba/index_p#{i + 1}.html"
 
       html = open(url) do |f|
@@ -77,28 +79,32 @@ class FetchStoreData
       puts total_data
 
       # EXCELにデータを保存する
+      # total_dataの要素数が20で止まってしまっている。
       total_data.each_with_index { |store_data, row|
 
         p store_data[0]
         p store_data[2]
         p row
-        @@worksheet.add_cell(row, 0, store_data[0])
-        @@worksheet.add_cell(row, 1, store_data[1])
-        @@worksheet.add_cell(row, 2, store_data[2])
+
+        # @@worksheet.add_cell(row, 0, store_data[0])
+        # @@worksheet.add_cell(row, 1, store_data[1])
+        # @@worksheet.add_cell(row, 2, store_data[2])
       }
     }
 
 
+
+    @@worksheet.add_cell(row, 0, store_data[0])
+    @@worksheet.add_cell(row, 1, store_data[1])
+    @@worksheet.add_cell(row, 2, store_data[2])
     @@workbook.write('test_store_data.xlsx')
   end
-
 end
-
 
 # @@PAGE_LAST_INDEX = 50
 # @@page_range = 1..PAGE_LAST_INDEX
 
-fetchData = FetchStoreData.new(1)
+fetchData = FetchStoreData.new(3)
 fetchData.scrape_store_url()
 
 
