@@ -29,12 +29,11 @@ class FetchStoreData
   # TODO: 全◯◯件表示の部分から数値を取得する方法に変更する。
 
   def scrape_store_url()
-
+    @total_data = []
     @PAGE_LAST_INDEX.times { |i|
 
       puts "#{i}回目のクローリング"
       base_url = "https://www.ekiten.jp"
-      total_data = []
       charset = nil
 
       # ここで、カテゴリを選択する。
@@ -73,30 +72,28 @@ class FetchStoreData
         store_data.push(store_tel_number)
         store_data.push(store_name)
         store_data.push(store_address)
-        total_data.push(store_data)
+        @total_data.push(store_data)
       end
 
-      puts total_data
+      puts @total_data
 
       # EXCELにデータを保存する
-      # total_dataの要素数が20で止まってしまっている。
-      total_data.each_with_index { |store_data, row|
+      #TODO: total_dataの要素数が20で止まってしまっている。total_dataへ20以上のデータをぶち込む。できた。
+
+      @total_data.each_with_index { |store_data, row|
 
         p store_data[0]
         p store_data[2]
         p row
 
-        # @@worksheet.add_cell(row, 0, store_data[0])
-        # @@worksheet.add_cell(row, 1, store_data[1])
-        # @@worksheet.add_cell(row, 2, store_data[2])
+
+        @@worksheet.add_cell(row, 0, store_data[0])
+        @@worksheet.add_cell(row, 1, store_data[1])
+        @@worksheet.add_cell(row, 2, store_data[2])
       }
     }
 
 
-
-    @@worksheet.add_cell(row, 0, store_data[0])
-    @@worksheet.add_cell(row, 1, store_data[1])
-    @@worksheet.add_cell(row, 2, store_data[2])
     @@workbook.write('test_store_data.xlsx')
   end
 end
@@ -104,7 +101,7 @@ end
 # @@PAGE_LAST_INDEX = 50
 # @@page_range = 1..PAGE_LAST_INDEX
 
-fetchData = FetchStoreData.new(3)
+fetchData = FetchStoreData.new(2)
 fetchData.scrape_store_url()
 
 
