@@ -2,6 +2,7 @@
 require 'nokogiri'
 require 'open-uri'
 require 'csv'
+require 'rubyXL'
 
 
 # urls = %w(
@@ -10,81 +11,100 @@ require 'csv'
 #   http://qiita.com/search?q=swift
 # )
 # https://www.ekiten.jp/cat_seitai/chiba/
-# index_p2.html
 
 # /chiba /tokyo /kanagawa バージョンも作成する。
 
+class FetchStoreData
 
-PAGE_LAST_INDEX = 50
+  # ワークシートの作成
+  @@workbook = RubyXL::Workbook.new
+  @@worksheet = @@workbook[0]
+  @@worksheet.sheet_name = 'SearchedStoreData'
 
-range = 1..PAGE_LAST_INDEX
+  @PAGE_LAST_INDEX = 1
 
-index = 1
-
-# イテレーション方法 A. マジックナンバー50を使う。 B. 全◯◯件という数字を取得して、回す。
-# 実装方法 Bで進めていく。
-
-range.each { |val|
-
-  p val
-
-
-  
-}
-
-def scrape_store_url(index)
-
-  base_url = "https://www.ekiten.jp"
-  total_data = []
-  charset = nil
-
-  url = "https://www.ekiten.jp/cat_seitai/chiba/index_p#{index}.html"
-
-  html = open(url) do |f|
-    charset = f.charset
-    f.read
+  def initialize(index = 50)
+    @PAGE_LAST_INDEX = index
   end
 
-  doc = Nokogiri::HTML.parse(html, nil, charset)
+  # TODO: 全◯◯件表示の部分から数値を取得する方法に変更する。
 
-  doc.css('.box_head_title_body').each_with_index do |node, i|
-    store_data = []
+  def scrape_store_url()
 
-    # 店の名前を取得
-    store_name = node.content.gsub(/(\t|\s|\n|\r|\f|\v)/,"")
+    @PAGE_LAST_INDEX.times { |i|
 
-    # 店の住所を取得
-    store_address = doc.css('.fa-map-marker + span')[i].content
+      base_url = "https://www.ekiten.jp"
+      total_data = []
+      charset = nil
+      url = "https://www.ekiten.jp/cat_seitai/chiba/index_p#{i + 1}.html"
 
-    # 店のリンクを取得
-    store_url = doc.css('.box_head_title_body > a')[i][:href]
-    store_tel_url = base_url + store_url + 'tel/'
-    p store_tel_url
+      html = open(url) do |f|
+        charset = f.charset
+        f.read
+      end
 
-    # 店のtelを取得
-    store_tel_html = open(store_tel_url) do |f|
-      charset = f.charset
-      f.read
-    end
+      doc = Nokogiri::HTML.parse(html, nil, charset)
+      doc.css('.box_head_title_body').each_with_index do |node, i|
+        store_data = []
 
-    tel_doc = Nokogiri::HTML.parse(store_tel_html, nil, charset)
-    store_tel_number = tel_doc.css('.emphasis_text05')[0].content.gsub(/(\t|\s|\n|\r|\f|\v)/,"")
+        # 店の名前を取得
+        store_name = node.content.gsub(/(\t|\s|\n|\r|\f|\v)/,"")
 
-    p store_tel_number
+        # 店の住所を取得
+        store_address = doc.css('.fa-map-marker + span')[i].content
 
-    store_data.push(store_tel_number)
-    store_data.push(store_name)
-    store_data.push(store_address)
-    total_data.push(store_data)
+        # 店のリンクを取得
+        store_url = doc.css('.box_head_title_body > a')[i][:href]
+        store_tel_url = base_url + store_url + 'tel/'
+
+        p store_tel_url
+
+        # 店のtelを取得
+        store_tel_html = open(store_tel_url) do |f|
+          charset = f.charset
+          f.read
+        end
+
+        tel_doc = Nokogiri::HTML.parse(store_tel_html, nil, charset)
+        store_tel_number = tel_doc.css('.emphasis_text05')[0].content.gsub(/(\t|\s|\n|\r|\f|\v)/,"")
+
+        store_data.push(store_tel_number)
+        store_data.push(store_name)
+        store_data.push(store_address)
+        total_data.push(store_data)
+      end
+
+      puts total_data
+
+      # EXCELにデータを保存する
+      total_data.each_with_index { |store_data, row|
+
+        p store_data[0]
+        p store_data[2]
+        p row
+        @@worksheet.add_cell(row, 0, store_data[0])
+        @@worksheet.add_cell(row, 1, store_data[1])
+        @@worksheet.add_cell(row, 2, store_data[2])
+      }
+    }
+
+
+    @@workbook.write('test_store_data.xlsx')
   end
-
-  puts total_data
 
 end
 
-p scrape_store_url(index)
-index += 1
-p scrape_store_url(index)
+
+# @@PAGE_LAST_INDEX = 50
+# @@page_range = 1..PAGE_LAST_INDEX
+
+fetchData = FetchStoreData.new(1)
+fetchData.scrape_store_url()
+
+
+# page_range.each { |index|
+#   p fetchData.scrape_store_url(index)
+# }
 
 
 # やりたい事は、全ページ取得後に、index_p[n]に移行する。
